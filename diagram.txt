@@ -1,0 +1,36 @@
+/Entities
+    Usuario.cs
+    Cuenta.cs
+    Movimiento.cs
+
+/Repositories
+    IUsuarioRepository.cs
+    ICuentaRepository.cs
+    IMovimientoRepository.cs
+    UsuarioRepository.cs
+    CuentaRepository.cs
+    MovimientoRepository.cs
+
+/Services
+    AuthService.cs
+    CuentaService.cs
+    TransferenciaService.cs
+
+/UI
+    Menu.cs
+    ConsoleUI.cs
+    InputHandler.cs
+
+/Program.cs
+
+
+
+public class CuentaService
+{
+    private readonly ICuentaRepository _cuentaRepository;
+
+    public CuentaService(ICuentaRepository cuentaRepository)
+    {
+        _cuentaRepository = cuentaRepository;
+    }
+}

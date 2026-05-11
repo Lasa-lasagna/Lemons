@@ -1,0 +1,169 @@
+Va, te lo explico con comentarios línea por línea para que no quede nada “mágico”.
+
+---
+
+# 🟢 1. Archivo: `DependencyInjection.cs`
+
+```csharp id="cfg1"
+// Importa librerías necesarias para DI (inyección de dependencias)
+using Microsoft.Extensions.DependencyInjection;
+
+// Importa EF Core
+using Microsoft.EntityFrameworkCore;
+
+// Clase estática: no necesitas crear instancia
+public static class DependencyInjection
+{
+    // Método que configura TODOS los servicios de la app
+    public static IServiceProvider Configure()
+    {
+        // Contenedor donde registras servicios (IoC)
+        var services = new ServiceCollection();
+
+        // 🔗 Registra el DbContext (conexión a PostgreSQL)
+        services.AddDbContext<AppDbContext>(options =>
+            options.UseNpgsql(
+                "Host=localhost;Database=mi_db;Username=postgres;Password=1234"
+            )
+        );
+
+        // 📦 Registra tu lógica de negocio
+        // Scoped = se crea una instancia por uso (suficiente aquí)
+        services.AddScoped<UsuarioService>();
+
+        // 🖥️ Registra el Form (UI)
+        services.AddScoped<Form1>();
+
+        // 🔨 Construye el contenedor final
+        // (a partir de aquí ya puedes pedir objetos)
+        return services.BuildServiceProvider();
+    }
+}
+```
+
+---
+
+# 🟢 2. Archivo: `Program.cs`
+
+```csharp id="prog1"
+// Inicializa configuración de WinForms
+ApplicationConfiguration.Initialize();
+
+// Llama a tu configuración de IoC
+var provider = DependencyInjection.Configure();
+
+// 🚀 Arranca la app con el Form principal
+// En lugar de new Form1(), se lo pedimos al contenedor
+Application.Run(provider.GetRequiredService<Form1>());
+```
+
+---
+
+# 🟢 3. Archivo: `Form1.cs`
+
+```csharp id="form1"
+public partial class Form1 : Form
+{
+    // 🔗 Dependencia: servicio que habla con la BD
+    private readonly UsuarioService _service;
+
+    // Constructor con inyección de dependencias
+    public Form1(UsuarioService service)
+    {
+        _service = service; // guardas el servicio
+        InitializeComponent();
+    }
+
+    // Evento de botón (ej: cargar usuarios)
+    private void btnCargar_Click(object sender, EventArgs e)
+    {
+        // Llama al servicio (no accede directo a la BD)
+        var usuarios = _service.GetUsuarios();
+
+        // Muestra en el DataGridView
+        dataGridView1.DataSource = usuarios;
+    }
+}
+```
+
+---
+
+# 🟢 4. Archivo: `UsuarioService.cs`
+
+```csharp id="service1"
+public class UsuarioService
+{
+    // 🔗 DbContext (conexión a la BD)
+    private readonly AppDbContext _context;
+
+    // Constructor con inyección
+    public UsuarioService(AppDbContext context)
+    {
+        _context = context;
+    }
+
+    // 📥 Obtener todos los usuarios
+    public List<Usuario> GetUsuarios()
+    {
+        // EF Core traduce esto a SQL automáticamente
+        return _context.Usuarios.ToList();
+    }
+}
+```
+
+---
+
+# 🧠 5. Qué está pasando (en simple)
+
+```text id="flow1"
+Program.cs
+   ↓
+DependencyInjection (configura todo)
+   ↓
+Form1 (UI)
+   ↓
+UsuarioService (lógica)
+   ↓
+AppDbContext (BD)
+   ↓
+PostgreSQL
+```
+
+---
+
+# 🔥 6. Traducción mental
+
+* `ServiceCollection` → “registro de clases”
+* `AddScoped` → “cuando lo necesites, créalo”
+* `GetRequiredService` → “dame una instancia lista”
+* constructor → “inyecta lo que necesito”
+
+---
+
+# ⚡ 7. Por qué esto es mejor
+
+✔ no haces `new` por todos lados
+✔ separas UI de BD
+✔ puedes escalar fácil
+✔ es lo que se usa en apps reales
+
+---
+
+# 🧭 Regla mental
+
+> 🔥 “El contenedor crea los objetos, tú solo los usas”
+
+---
+
+Si quieres, siguiente paso te puedo:
+👉 agregar Repository layer encima del Service (como Spring Data)
+👉 o hacer CRUD completo con botones (crear, editar, eliminar en WinForms)
+
+
+
+| Nivel     | Verbo mental               |
+| --------- | -------------------------- |
+| public    | “Disponible para todos”    |
+| internal  | “Solo dentro del proyecto” |
+| private   | “Solo para mí”             |
+| protected | “Para mí y mis hijos”      |
